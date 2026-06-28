@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word-Lernbegleiter – Wissenschaftliche Projektarbeit</title>
+<style>
+  :root{
+    --bg:#f4f6fa; --card:#ffffff; --ink:#1c2733; --muted:#5b6b7c;
+    --blue:#2e5b8a; --blue-d:#1f3d5c; --blue-l:#e7eef7;
+    --green:#2e8b57; --green-l:#e4f3ea; --amber:#b9770e; --amber-l:#fdf2dd;
+    --line:#dde4ec; --lock:#9aa6b3; --shadow:0 2px 10px rgba(31,61,92,.08);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",system-ui,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+  header{background:linear-gradient(135deg,var(--blue-d),var(--blue));color:#fff;padding:18px 22px;box-shadow:var(--shadow)}
+  header .wrap{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:space-between}
+  header h1{font-size:1.18rem;margin:0;font-weight:600}
+  header .sub{font-size:.82rem;opacity:.85;margin-top:2px}
+  .who{display:flex;align-items:center;gap:10px;font-size:.9rem}
+  .who input{border:none;border-radius:6px;padding:7px 10px;font-size:.9rem;min-width:150px}
+  .who .badge{background:rgba(255,255,255,.18);padding:6px 12px;border-radius:20px;font-weight:600}
+  .progresswrap{max-width:1080px;margin:14px auto 0;padding:0 6px}
+  .pbar{height:9px;background:var(--blue-l);border-radius:8px;overflow:hidden}
+  .pbar > div{height:100%;background:var(--green);width:0;transition:width .4s}
+  .pmeta{font-size:.78rem;opacity:.9;margin-top:5px}
+  main{max-width:1080px;margin:22px auto;padding:0 16px;display:grid;grid-template-columns:260px 1fr;gap:22px}
+  @media(max-width:820px){main{grid-template-columns:1fr}}
+  .stepper{background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:10px;align-self:start;position:sticky;top:14px}
+  .step{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;font-size:.88rem;color:var(--muted)}
+  .step:hover{background:var(--bg)}
+  .step.active{background:var(--blue-l);color:var(--blue-d);font-weight:600}
+  .step.locked{color:var(--lock);cursor:not-allowed}
+  .step .dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;flex-shrink:0;background:var(--line);color:#fff}
+  .step.done .dot{background:var(--green)}
+  .step.active .dot{background:var(--blue)}
+  .step.locked .dot{background:var(--lock)}
+  .card{background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:26px;min-height:300px}
+  .tag{display:inline-block;background:var(--blue-l);color:var(--blue-d);font-size:.74rem;font-weight:700;padding:4px 11px;border-radius:20px;letter-spacing:.3px}
+  .tag.time{background:var(--amber-l);color:var(--amber);margin-left:6px}
+  h2.stitle{font-size:1.45rem;margin:14px 0 6px;color:var(--blue-d)}
+  .auftrag{background:var(--blue-l);border-left:4px solid var(--blue);padding:13px 16px;border-radius:8px;margin:14px 0;font-size:.96rem}
+  .auftrag b{color:var(--blue-d)}
+  h3.lbl{font-size:.82rem;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:22px 0 8px}
+  ol.steps{margin:0;padding-left:20px}
+  ol.steps li{margin:7px 0}
+  .ui{background:#eef2f7;border-radius:5px;padding:1px 7px;font-size:.86em;font-weight:600;color:var(--blue-d);white-space:nowrap}
+  .crit label{display:flex;gap:11px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:8px;margin:7px 0;cursor:pointer;transition:.15s}
+  .crit label:hover{border-color:var(--blue)}
+  .crit input{margin-top:3px;width:17px;height:17px;flex-shrink:0;accent-color:var(--green)}
+  .crit label.checked{background:var(--green-l);border-color:var(--green)}
+  details{margin:10px 0;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  details summary{cursor:pointer;padding:11px 14px;font-weight:600;font-size:.92rem;background:#fafbfd;user-select:none}
+  details[open] summary{border-bottom:1px solid var(--line)}
+  details .inner{padding:12px 16px;font-size:.93rem}
+  details.tip summary::before{content:"💡 ";}
+  details.sol summary::before{content:"✅ ";}
+  .btn{border:none;border-radius:8px;padding:12px 22px;font-size:.96rem;font-weight:600;cursor:pointer;transition:.15s}
+  .btn.primary{background:var(--green);color:#fff}
+  .btn.primary:disabled{background:#bcd6c6;cursor:not-allowed}
+  .btn.primary:not(:disabled):hover{background:#256e45}
+  .btn.ghost{background:var(--blue-l);color:var(--blue-d)}
+  .btn.ghost:hover{background:#d7e3f2}
+  .actions{margin-top:22px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .hint{font-size:.84rem;color:var(--muted)}
+  .feedback{margin-top:20px;background:var(--green-l);border:1px solid var(--green);border-radius:10px;padding:18px 20px;display:none}
+  .feedback.show{display:block;animation:pop .35s}
+  @keyframes pop{from{transform:scale(.97);opacity:0}to{transform:scale(1);opacity:1}}
+  .feedback h4{margin:0 0 6px;color:var(--green);font-size:1.05rem}
+  .feedback .next{margin-top:12px;padding-top:12px;border-top:1px dashed var(--green)}
+  .review-note{background:var(--amber-l);border-left:4px solid var(--amber);padding:12px 16px;border-radius:8px;margin:14px 0;font-size:.9rem}
+  footer{max-width:1080px;margin:10px auto 40px;padding:0 16px}
+  .chiffre{background:var(--card);border-radius:12px;box-shadow:var(--shadow);padding:18px 22px}
+  .chiffre h3{margin:0 0 8px;font-size:1rem;color:var(--blue-d)}
+  .chiffre .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+  .chiffre input{flex:1;min-width:200px;border:1px solid var(--line);border-radius:7px;padding:9px 11px;font-family:monospace;font-size:.82rem}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--blue-d);color:#fff;padding:12px 22px;border-radius:24px;box-shadow:var(--shadow);font-size:.9rem;opacity:0;pointer-events:none;transition:.3s}
+  .toast.show{opacity:1}
+  .intro p{font-size:.97rem}
+  .done-banner{display:none;text-align:center;padding:30px}
+  .done-banner.show{display:block}
+  .done-banner .big{font-size:3rem}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div>
+      <h1>📘 Word-Lernbegleiter</h1>
+      <div class="sub">Wissenschaftliche Projektarbeit &middot; Thema: Potenziale der KI in der Mechatronik</div>
+    </div>
+    <div class="who">
+      <span id="nameLabel">Dein Name:</span>
+      <input id="nameInput" placeholder="Vorname eingeben" autocomplete="off">
+    </div>
+  </div>
+  <div class="progresswrap">
+    <div class="pbar"><div id="pfill"></div></div>
+    <div class="pmeta"><span id="pcount">0</span> von <span id="ptotal">0</span> Stufen abgeschlossen</div>
+  </div>
+</header>
+
+<main>
+  <nav class="stepper" id="stepper"></nav>
+  <section class="card" id="card"></section>
+</main>
+
+<footer>
+  <div class="chiffre">
+    <h3>🔐 Fortschritt sichern &amp; mitnehmen (Chiffre)</h3>
+    <div class="hint">Deine Chiffre speichert deinen Fortschritt. Kopiere sie, um an einem anderen Gerät weiterzuarbeiten – oder gib sie der Lehrkraft, damit sie deinen Stand sieht. Der Fortschritt wird zusätzlich automatisch in diesem Browser gespeichert.</div>
+    <div class="row">
+      <button class="btn ghost" id="genCode">Chiffre erzeugen</button>
+      <button class="btn ghost" id="genLink">Als Link kopieren</button>
+    </div>
+    <div class="row">
+      <input id="codeBox" placeholder="Hier erscheint deine Chiffre …" readonly>
+    </div>
+    <div class="row">
+      <input id="loadBox" placeholder="Chiffre einfügen, um Fortschritt zu laden …">
+      <button class="btn ghost" id="loadCode">Laden</button>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ====================== INHALT DER STUFEN ======================
+const UI = s => '<span class="ui">'+s+'</span>';
+const STAGES = [
+  {
+    id:"intro", title:"Start", time:"5 Min", icon:"i",
+    intro:true,
+    head:"Willkommen zu deiner Projektarbeit",
+    html:`
+      <div class="intro">
+      <p>In dieser Lerneinheit machst du aus einem unformatierten Text eine vollständige, wissenschaftliche Projektarbeit in Microsoft&nbsp;Word – genau so, wie du sie später für deine echte Projektarbeit brauchst.</p>
+      <p><b>So funktioniert es:</b></p>
+      <ol class="steps">
+        <li>Öffne die Datei <b>Projektarbeit_Rohfassung.docx</b> in Word.</li>
+        <li>Arbeite hier Stufe für Stufe die Aufträge ab.</li>
+        <li>Hake nach jeder Stufe die <b>Erfolgskriterien</b> ab und schließe die Stufe ab – du bekommst eine Rückmeldung und die nächste Aufgabe wird freigeschaltet.</li>
+        <li>Sichere deinen Fortschritt jederzeit unten über deine <b>Chiffre</b>.</li>
+      </ol>
+      <p>Trage zuerst oben rechts deinen <b>Namen</b> ein. Dann kann es losgehen!</p>
+      </div>`,
+    crit:[], tip:null, sol:null
+  },
+  {
+    id:"setup", title:"Dokument einrichten", time:"30 Min", icon:"1",
+    head:"Stufe 1 · Seitenlayout & Grundformatierung",
+    auftrag:"Öffne die Rohfassung und richte Seitenränder, Schriftart, Zeilenabstand und Ausrichtung einheitlich ein.",
+    steps:[
+      `Markiere den gesamten Text mit ${UI('Strg + A')}.`,
+      `Schriftart einstellen: Registerkarte ${UI('Start')} → Schriftart ${UI('Arial')} oder ${UI('Times New Roman')}, Größe 11 bzw. 12.`,
+      `Zeilenabstand: ${UI('Start')} → ${UI('Zeilen- und Absatzabstand')} → ${UI('1,5')}.`,
+      `Ausrichtung: ${UI('Start')} → ${UI('Blocksatz')} (oder ${UI('Strg + B')} für Blocksatz).`,
+      `Seitenränder: Registerkarte ${UI('Layout')} → ${UI('Seitenränder')} → ${UI('Normal')} (2,5 cm ringsum).`,
+      `Optional: ${UI('Layout')} → ${UI('Silbentrennung')} → ${UI('Automatisch')}.`
+    ],
+    crit:[
+      "Seitenränder auf „Normal“ (2,5 cm) gesetzt",
+      "Im ganzen Dokument einheitliche Schriftart und -größe",
+      "Zeilenabstand 1,5 eingestellt",
+      "Fließtext im Blocksatz ausgerichtet"
+    ],
+    tip:"Markiere immer zuerst mit Strg + A den gesamten Text – dann wirken Schriftart und Zeilenabstand sofort überall.",
+    sol:"Dein Dokument hat jetzt durchgängig dieselbe Schrift (z. B. Arial 11), 1,5-fachen Zeilenabstand, Blocksatz und 2,5-cm-Ränder. Die eckigen Platzhalter und der Hinweis-Absatz bleiben vorerst stehen.",
+    lob:"Sauberes Fundament! Ein einheitliches Layout ist die Basis jeder wissenschaftlichen Arbeit – darauf baut alles Weitere auf."
+  },
+  {
+    id:"styles", title:"Überschriften & Formatvorlagen", time:"45 Min", icon:"2",
+    head:"Stufe 2 · Überschriften mit Formatvorlagen",
+    auftrag:"Weise allen Überschriften die richtigen Formatvorlagen zu: „Überschrift 1“ für Kapitel (1, 2, 3 …), „Überschrift 2“ für Unterkapitel (1.1, 1.2 …). Lösche den Hinweis-Absatz am Anfang.",
+    steps:[
+      `Klicke in eine Kapitelüberschrift, z. B. ${UI('1 Einleitung')}.`,
+      `${UI('Start')} → im Formatvorlagen-Katalog auf ${UI('Überschrift 1')} klicken.`,
+      `Klicke in ein Unterkapitel, z. B. ${UI('1.1 Problemstellung')} → ${UI('Überschrift 2')}.`,
+      `Wiederhole das für <b>alle</b> Überschriften des Dokuments.`,
+      `Aussehen anpassen (optional): Rechtsklick auf ${UI('Überschrift 1')} im Katalog → ${UI('Ändern')}.`,
+      `Lösche den grauen Hinweis-Absatz am Dokumentanfang.`
+    ],
+    crit:[
+      "Alle Kapitelüberschriften = Formatvorlage „Überschrift 1“",
+      "Alle Unterkapitel = Formatvorlage „Überschrift 2“",
+      "Keine Überschrift ist mehr normaler Fließtext",
+      "Hinweis-Absatz wurde gelöscht"
+    ],
+    tip:"Nur mit den Formatvorlagen „Überschrift 1/2“ erkennt Word später automatisch deine Gliederung und kann das Inhaltsverzeichnis selbst erzeugen.",
+    sol:"Im Navigationsbereich (Registerkarte „Ansicht“ → „Navigationsbereich“) siehst du jetzt deine komplette Gliederung als Baum – ein guter Test, ob alle Überschriften richtig formatiert sind.",
+    lob:"Stark! Du hast die wichtigste Word-Funktion für wissenschaftliche Arbeiten gemeistert. Formatvorlagen sparen dir später enorm viel Arbeit."
+  },
+  {
+    id:"deckblatt", title:"Deckblatt", time:"30 Min", icon:"3",
+    head:"Stufe 3 · Deckblatt erstellen",
+    auftrag:"Erstelle eine eigene erste Seite mit allen Pflichtangaben: Titel, dein Name, Klasse, betreuende Lehrkraft sowie Ort und Datum.",
+    steps:[
+      `Setze den Cursor ganz an den Anfang des Dokuments.`,
+      `Füge einen Seitenumbruch ein: ${UI('Einfügen')} → ${UI('Seitenumbruch')} (oder ${UI('Strg + Enter')}).`,
+      `Gestalte die erste Seite: Titel groß und zentriert, darunter die Angaben.`,
+      `Wichtig: Das Deckblatt bekommt <b>keine</b> Überschrift-Formatvorlage (sonst steht es im Inhaltsverzeichnis).`,
+      `Tipp für Profis: ${UI('Einfügen')} → ${UI('Deckblatt')} bietet fertige Vorlagen – ein eigenes wirkt aber sauberer.`
+    ],
+    crit:[
+      "Eigene erste Seite nur mit Deckblatt-Angaben",
+      "Titel, Name, Klasse, Betreuer, Ort und Datum vorhanden",
+      "Deckblatt-Text ohne Überschrift-Formatvorlage",
+      "Nach dem Deckblatt folgt ein Seitenumbruch"
+    ],
+    tip:"Nutze „Einfügen → Seitenumbruch“ statt vieler Leerzeilen. So verrutscht beim Weiterschreiben nichts.",
+    sol:"Deine Arbeit beginnt jetzt mit einer professionellen Titelseite. Der eigentliche Text startet sauber auf der zweiten Seite.",
+    lob:"Sieht professionell aus! Ein gutes Deckblatt ist der erste Eindruck deiner Arbeit."
+  },
+  {
+    id:"toc", title:"Inhaltsverzeichnis", time:"30 Min", icon:"4",
+    head:"Stufe 4 · Automatisches Inhaltsverzeichnis",
+    auftrag:"Füge direkt nach dem Deckblatt ein automatisches Inhaltsverzeichnis ein, das alle Kapitel und Unterkapitel mit Seitenzahlen anzeigt.",
+    steps:[
+      `Setze den Cursor auf eine neue Seite direkt nach dem Deckblatt (ggf. ${UI('Strg + Enter')}).`,
+      `Registerkarte ${UI('Referenzen')} (in älteren Versionen ${UI('Verweise')}) → ${UI('Inhaltsverzeichnis')} → ${UI('Automatische Tabelle 1')}.`,
+      `Word baut das Verzeichnis aus deinen Überschrift-Formatvorlagen auf.`,
+      `Aktualisieren nach Änderungen: Rechtsklick ins Verzeichnis → ${UI('Felder aktualisieren')} → ${UI('Gesamtes Verzeichnis')}.`
+    ],
+    crit:[
+      "Inhaltsverzeichnis auf eigener Seite nach dem Deckblatt",
+      "Alle Kapitel und Unterkapitel erscheinen automatisch",
+      "Zu jedem Eintrag wird eine Seitenzahl angezeigt",
+      "Verzeichnis lässt sich aktualisieren"
+    ],
+    tip:"Klappt nur, wenn Stufe 2 erledigt ist! Fehlt ein Kapitel im Verzeichnis, hat die Überschrift die falsche Formatvorlage.",
+    sol:"Dein Inhaltsverzeichnis entsteht vollautomatisch aus den Formatvorlagen. Du musst es nie von Hand tippen – nur nach Änderungen aktualisieren.",
+    lob:"Genau so arbeiten Profis! Jetzt zahlt sich Stufe 2 aus: Das Verzeichnis pflegt sich praktisch von selbst."
+  },
+  {
+    id:"pagenum", title:"Kopf-/Fußzeile & Seitenzahlen", time:"30 Min", icon:"5",
+    head:"Stufe 5 · Kopf-/Fußzeile und Seitenzahlen",
+    auftrag:"Füge Seitenzahlen in die Fußzeile ein. Das Deckblatt soll keine Seitenzahl erhalten. Optional: eine Kopfzeile mit dem Titel.",
+    steps:[
+      `${UI('Einfügen')} → ${UI('Seitenzahl')} → ${UI('Seitenende')} → eine Variante wählen.`,
+      `Deckblatt ausnehmen: In den Kopf-/Fußzeilen-Werkzeugen ${UI('Erste Seite anders')} aktivieren.`,
+      `Optional Kopfzeile: ${UI('Einfügen')} → ${UI('Kopfzeile')} → Titel eintragen.`,
+      `Kopf-/Fußzeile schließen: Doppelklick in den Textbereich oder ${UI('Kopf- und Fußzeile schließen')}.`
+    ],
+    crit:[
+      "Seitenzahlen erscheinen in der Fußzeile",
+      "Das Deckblatt hat keine Seitenzahl",
+      "Die Zählung wirkt im ganzen Dokument einheitlich"
+    ],
+    tip:"Ein Doppelklick in den unteren Seitenrand öffnet die Fußzeile direkt – schneller als über das Menü.",
+    sol:"Mit „Erste Seite anders“ bleibt das Deckblatt zahlenfrei, während alle anderen Seiten nummeriert sind.",
+    lob:"Top! Jetzt findet sich jede Leserin und jeder Leser in deiner Arbeit zurecht."
+  },
+  {
+    id:"images", title:"Bilder & Abbildungsverzeichnis", time:"60 Min", icon:"6",
+    head:"Stufe 6 · Bilder einfügen, beschriften & Verzeichnis",
+    auftrag:"Ersetze die beiden Abbildungs-Platzhalter durch die Bilder aus dem Ordner „Material“, beschrifte sie und erstelle ein Abbildungsverzeichnis.",
+    steps:[
+      `Klicke auf den Platzhalter ${UI('[HIER ABBILDUNG 1 …]')} und lösche ihn.`,
+      `${UI('Einfügen')} → ${UI('Bilder')} → ${UI('Dieses Gerät')} → wähle aus dem Ordner <b>Material</b> die Datei <b>Abbildung1_PM-Regelkreis.png</b>.`,
+      `Beschriftung: Rechtsklick auf das Bild → ${UI('Beschriftung einfügen')} → Bezeichnung ${UI('Abbildung')} → Text ergänzen.`,
+      `Wiederhole es für ${UI('Abbildung2_Schwingungssignal.png')} an der zweiten Markierung.`,
+      `Abbildungsverzeichnis: passende Seite wählen → ${UI('Referenzen')} → ${UI('Abbildungsverzeichnis einfügen')}.`
+    ],
+    crit:[
+      "Beide Abbildungen an der richtigen Stelle eingefügt (Platzhalter entfernt)",
+      "Jede Abbildung hat eine Beschriftung („Abbildung 1: …“)",
+      "Ein Abbildungsverzeichnis wurde erstellt",
+      "Bilder sind sinnvoll in der Breite skaliert"
+    ],
+    tip:"Die Bilddateien liegen im Ordner „Material“ direkt neben deiner Projektarbeit. Beschrifte über die Word-Funktion – nur dann landen sie automatisch im Abbildungsverzeichnis.",
+    sol:"Mit der Funktion „Beschriftung einfügen“ nummeriert Word die Abbildungen automatisch durch und erstellt daraus das Verzeichnis – ganz ohne Handarbeit.",
+    lob:"Klasse! Bilder mit korrekten Beschriftungen und Verzeichnis sind ein echtes Qualitätsmerkmal wissenschaftlicher Arbeiten."
+  },
+  {
+    id:"table", title:"Tabelle einfügen", time:"45 Min", icon:"7",
+    head:"Stufe 7 · Tabelle einfügen und formatieren",
+    auftrag:"Ersetze den Tabellen-Platzhalter durch eine formatierte Tabelle zum Vergleich der Wartungsstrategien (4 Spalten, 4 Zeilen) und beschrifte sie.",
+    steps:[
+      `Lösche den Platzhalter ${UI('[HIER TABELLE 1 …]')}.`,
+      `${UI('Einfügen')} → ${UI('Tabelle')} → Raster auf <b>4 × 4</b> ziehen.`,
+      `Trage die Inhalte ein – Kopfzeile: Strategie / Auslöser / Vorteil / Nachteil; darunter reaktiv, präventiv, vorausschauend (Daten stehen im Platzhaltertext).`,
+      `Formatieren: Tabelle anklicken → Registerkarte ${UI('Tabellenentwurf')} → eine ${UI('Tabellenformatvorlage')} wählen.`,
+      `Beschriftung: Rechtsklick → ${UI('Beschriftung einfügen')} → Bezeichnung ${UI('Tabelle')}.`
+    ],
+    crit:[
+      "Tabelle mit 4 Spalten und 4 Zeilen, korrekt befüllt",
+      "Eine Tabellenformatvorlage wurde angewendet",
+      "Kopfzeile ist hervorgehoben",
+      "Beschriftung „Tabelle 1: …“ vorhanden"
+    ],
+    tip:"Eine hervorgehobene Kopfzeile (Häkchen bei „Kopfzeile“ im Tabellenentwurf) macht die Tabelle deutlich lesbarer.",
+    sol:"Die Tabelle vergleicht reaktive, präventive und vorausschauende Wartung. Mit einer Tabellenformatvorlage sieht sie in Sekunden professionell aus.",
+    lob:"Sehr gut! Tabellen verdichten Informationen – eine Kernkompetenz für technische Dokumentation."
+  },
+  {
+    id:"sources", title:"Quellen & Literaturverzeichnis", time:"45 Min", icon:"8",
+    head:"Stufe 8 · Quellen verwalten & Literaturverzeichnis",
+    auftrag:"Lege die Quellen im Quellen-Manager an, setze mindestens einen Quellenverweis im Text und erzeuge ein automatisches Literaturverzeichnis.",
+    steps:[
+      `Formatvorlage wählen: ${UI('Referenzen')} → Feld ${UI('Formatvorlage')} → z. B. ${UI('ISO 690')} oder ${UI('APA')}.`,
+      `${UI('Referenzen')} → ${UI('Zitat einfügen')} → ${UI('Neue Quelle hinzufügen')} → Typ, Autor, Titel, Jahr eingeben (mind. 3 Quellen).`,
+      `Setze im Text an passender Stelle einen Verweis: ${UI('Zitat einfügen')} → Quelle wählen.`,
+      `Ersetze das handgetippte Literaturverzeichnis am Ende: ${UI('Referenzen')} → ${UI('Literaturverzeichnis')} → Vorlage einfügen.`
+    ],
+    crit:[
+      "Mindestens 3 Quellen im Quellen-Manager angelegt",
+      "Mindestens ein Quellenverweis im Text gesetzt",
+      "Automatisches Literaturverzeichnis am Ende erzeugt",
+      "Einheitliche Zitier-Formatvorlage gewählt"
+    ],
+    tip:"Mit dem Quellen-Manager musst du Quellen nur einmal eingeben – Word formatiert Verweise und Literaturverzeichnis automatisch korrekt.",
+    sol:"Das automatische Literaturverzeichnis ersetzt die handgetippte Liste aus der Rohfassung und bleibt immer einheitlich formatiert.",
+    lob:"Wissenschaftlich sauber! Korrektes Zitieren schützt vor Plagiaten und macht deine Arbeit nachvollziehbar."
+  },
+  {
+    id:"comment", title:"Kommentar fürs Review", time:"30 Min", icon:"9",
+    head:"Stufe 9 · Kommentar schreiben & zum Review abgeben",
+    auftrag:"Markiere eine Stelle, zu der du eine Frage hast, und schreibe dazu einen Word-Kommentar. Speichere die Datei und gib sie zur Rückmeldung ab.",
+    reviewNote:"Bei dieser Stufe gibst du deinen Zwischenstand ab. Die Lehrkraft lässt einen KI-Assistenten deine Kommentare lesen und antworten: Du erfährst, was schon gut ist, und bekommst Hinweise für die nächsten Schritte – direkt im Dokument.",
+    steps:[
+      `Markiere im Text eine Stelle, zu der du eine konkrete Frage hast.`,
+      `${UI('Überprüfen')} → ${UI('Neuer Kommentar')}.`,
+      `Formuliere deine Frage, z. B. „Ist die Formulierung in Kapitel 4.2 wissenschaftlich genug?“.`,
+      `Speichere die Datei (${UI('Strg + S')}) und gib sie über den vereinbarten Weg ab.`
+    ],
+    crit:[
+      "Mindestens ein Kommentar mit einer konkreten Frage geschrieben",
+      "Der Kommentar bezieht sich auf eine markierte Textstelle",
+      "Datei gespeichert und zum Review abgegeben"
+    ],
+    tip:"Gute Fragen sind konkret. Statt „Ist das gut?“ lieber „Passt der Übergang von Kapitel 3 zu Kapitel 4?“ – darauf bekommst du eine viel hilfreichere Antwort.",
+    sol:"Word-Kommentare sind das Standardwerkzeug für Feedback in Teams. Du übst hier genau den Ablauf, der auch im Betrieb bei der Dokumentenprüfung genutzt wird.",
+    lob:"Gut gemacht! Du hast deinen Zwischenstand abgegeben und gezielt um Feedback gebeten – ein wichtiger Schritt im echten Arbeitsprozess."
+  },
+  {
+    id:"review", title:"Überarbeiten", time:"45 Min", icon:"10",
+    head:"Stufe 10 · Überarbeiten mit „Änderungen nachverfolgen“",
+    auftrag:"Aktiviere „Änderungen nachverfolgen“, arbeite die Rückmeldungen aus dem Review ein und markiere erledigte Kommentare als gelöst.",
+    steps:[
+      `${UI('Überprüfen')} → ${UI('Änderungen nachverfolgen')} aktivieren.`,
+      `Arbeite die Hinweise ein – deine Änderungen werden farbig markiert.`,
+      `Kommentare beantworten oder als ${UI('Gelöst')} markieren (Rechtsklick auf den Kommentar).`,
+      `Eigene Änderungen prüfen: ${UI('Überprüfen')} → ${UI('Annehmen')} bzw. ${UI('Ablehnen')}.`
+    ],
+    crit:[
+      "„Änderungen nachverfolgen“ wurde genutzt",
+      "Die Rückmeldungen aus dem Review wurden eingearbeitet",
+      "Erledigte Kommentare als „gelöst“ markiert"
+    ],
+    tip:"Mit nachverfolgten Änderungen sieht die Lehrkraft genau, was du überarbeitet hast – wie bei einer echten Korrekturschleife im Betrieb.",
+    sol:"„Änderungen nachverfolgen“ und Kommentare bilden zusammen einen vollständigen Review-Workflow, wie er in Unternehmen Standard ist.",
+    lob:"Prima! Überarbeiten gehört zu jeder guten Arbeit. Du nimmst Feedback an und verbesserst gezielt."
+  },
+  {
+    id:"final", title:"Endkontrolle & PDF", time:"30 Min", icon:"11",
+    head:"Stufe 11 · Endkontrolle und Abgabe als PDF",
+    auftrag:"Aktualisiere alle Verzeichnisse, prüfe Rechtschreibung und Layout und exportiere die fertige Arbeit als PDF.",
+    steps:[
+      `Alle Felder aktualisieren: ${UI('Strg + A')}, dann ${UI('F9')} → ${UI('Gesamtes Verzeichnis aktualisieren')}.`,
+      `Rechtschreibung: ${UI('Überprüfen')} → ${UI('Rechtschreibung und Grammatik')}.`,
+      `Layout prüfen: keine Platzhalter mehr, sinnvolle Seitenumbrüche, Bilder/Tabellen passen.`,
+      `Export: ${UI('Datei')} → ${UI('Exportieren')} → ${UI('PDF/XPS-Dokument erstellen')} (oder „Speichern unter“ → Dateityp PDF).`
+    ],
+    crit:[
+      "Inhalts-, Abbildungs- und Tabellenverzeichnis aktualisiert",
+      "Keine eckigen Platzhalter mehr im Text",
+      "Rechtschreibung geprüft",
+      "Arbeit als PDF exportiert"
+    ],
+    tip:"Strg + A und dann F9 aktualisiert alle Verzeichnisse auf einmal. Mache das immer ganz zum Schluss.",
+    sol:"Eine PDF-Datei sieht auf jedem Gerät gleich aus und lässt sich nicht versehentlich verändern – das ideale Abgabeformat.",
+    lob:"Geschafft! Du hast aus einem rohen Text eine vollständige, professionelle wissenschaftliche Projektarbeit erstellt. Diese Fähigkeiten brauchst du für deine echte Projektarbeit – und im Berufsleben."
+  }
+];
+
+// ====================== ZUSTAND & LOGIK ======================
+let state = { name:"", current:0, done:{}, checks:{} };
+const $ = id => document.getElementById(id);
+const LS_KEY = "word_lernbegleiter_v1";
+
+function save(){
+  try{ localStorage.setItem(LS_KEY, encode()); }catch(e){}
+}
+function encode(){
+  const json = JSON.stringify(state);
+  return btoa(unescape(encodeURIComponent(json)));
+}
+function decode(code){
+  try{ return JSON.parse(decodeURIComponent(escape(atob(code.trim())))); }catch(e){ return null; }
+}
+function load(){
+  // 1. Deeplink ?code=
+  const params = new URLSearchParams(location.search);
+  if(params.get("code")){
+    const s = decode(params.get("code"));
+    if(s){ state = s; return; }
+  }
+  // 2. localStorage
+  const raw = localStorage.getItem(LS_KEY);
+  if(raw){ const s = decode(raw); if(s){ state = s; } }
+}
+
+function stageUnlocked(i){
+  if(i===0) return true;
+  // freigeschaltet, wenn die vorherige Pflichtstufe abgeschlossen ist
+  for(let j=1;j<i;j++){ if(!state.done[STAGES[j].id]) return false; }
+  return i===1 ? true : !!state.done[STAGES[i-1].id];
+}
+function countDone(){ return STAGES.filter((s,i)=>i>0 && state.done[s.id]).length; }
+function totalStages(){ return STAGES.length-1; }
+
+function renderStepper(){
+  const el = $("stepper"); el.innerHTML="";
+  STAGES.forEach((s,i)=>{
+    const div = document.createElement("div");
+    const unlocked = stageUnlocked(i);
+    const done = state.done[s.id];
+    div.className = "step"+(i===state.current?" active":"")+(done?" done":"")+(!unlocked?" locked":"");
+    div.innerHTML = `<span class="dot">${done?"✓":s.icon}</span><span>${s.title}</span>`;
+    if(unlocked) div.onclick = ()=>{ state.current=i; render(); };
+    el.appendChild(div);
+  });
+}
+
+function render(){
+  renderStepper();
+  const s = STAGES[state.current];
+  const c = $("card");
+  // Fortschrittsbalken
+  $("pcount").textContent = countDone();
+  $("ptotal").textContent = totalStages();
+  $("pfill").style.width = (countDone()/totalStages()*100)+"%";
+
+  if(s.intro){
+    c.innerHTML = `<span class="tag">Einführung</span><span class="tag time">${s.time}</span>
+      <h2 class="stitle">${s.head}</h2>${s.html}
+      <div class="actions"><button class="btn primary" id="startBtn">Los geht's →</button></div>`;
+    $("startBtn").onclick = ()=>{ state.current=1; save(); render(); };
+    return;
+  }
+
+  const checks = state.checks[s.id] || s.crit.map(()=>false);
+  const critHTML = s.crit.map((t,idx)=>`
+    <label class="${checks[idx]?'checked':''}">
+      <input type="checkbox" data-i="${idx}" ${checks[idx]?'checked':''}>
+      <span>${t}</span></label>`).join("");
+  const allChecked = checks.length>0 && checks.every(Boolean);
+
+  c.innerHTML = `
+    <span class="tag">Stufe ${state.current} / ${totalStages()}</span><span class="tag time">⏱ ${s.time}</span>
+    <h2 class="stitle">${s.head}</h2>
+    <div class="auftrag"><b>Auftrag:</b> ${s.auftrag}</div>
+    ${s.reviewNote?`<div class="review-note"><b>📨 Review:</b> ${s.reviewNote}</div>`:""}
+    <h3 class="lbl">So gehst du vor</h3>
+    <ol class="steps">${s.steps.map(x=>`<li>${x}</li>`).join("")}</ol>
+    ${s.tip?`<details class="tip"><summary>Tipp anzeigen</summary><div class="inner">${s.tip}</div></details>`:""}
+    ${s.sol?`<details class="sol"><summary>Kontrolle / Musterlösung</summary><div class="inner">${s.sol}</div></details>`:""}
+    <h3 class="lbl">Erfolgskriterien – hake ab, was erledigt ist</h3>
+    <div class="crit" id="crit">${critHTML}</div>
+    <div class="actions">
+      <button class="btn primary" id="finishBtn" ${allChecked?'':'disabled'}>Stufe abschließen &amp; Feedback erhalten</button>
+      <span class="hint">${allChecked?'Alles erledigt – schließe die Stufe ab!':'Hake erst alle Kriterien ab.'}</span>
+    </div>
+    <div class="feedback" id="fb">
+      <h4>✅ ${state.name?state.name+', ':''}das hast du gut gemacht!</h4>
+      <div id="fbLob">${s.lob}</div>
+      <div class="next"><b>Deine nächste Aufgabe:</b> <span id="fbNext"></span><br>
+        <button class="btn primary" id="nextBtn" style="margin-top:12px">Weiter →</button></div>
+    </div>`;
+
+  // Checkbox-Handler
+  c.querySelectorAll('#crit input').forEach(cb=>{
+    cb.onchange = ()=>{
+      const i = +cb.dataset.i;
+      const arr = state.checks[s.id] || s.crit.map(()=>false);
+      arr[i] = cb.checked; state.checks[s.id]=arr;
+      cb.closest("label").classList.toggle("checked", cb.checked);
+      save(); render2Finish(s);
+    };
+  });
+  $("finishBtn").onclick = ()=> finishStage(s);
+  // Falls schon erledigt: Feedback direkt zeigen
+  if(state.done[s.id]) showFeedback(s);
+}
+
+function render2Finish(s){
+  const checks = state.checks[s.id]||[];
+  const all = checks.length>0 && checks.every(Boolean);
+  const btn=$("finishBtn"); if(btn){ btn.disabled=!all;
+    btn.nextElementSibling.textContent = all?'Alles erledigt – schließe die Stufe ab!':'Hake erst alle Kriterien ab.'; }
+}
+
+function finishStage(s){
+  state.done[s.id]=true; save(); showFeedback(s);
+  if($("fb")) $("fb").scrollIntoView({behavior:"smooth",block:"center"});
+}
+
+function showFeedback(s){
+  const fb=$("fb"); if(!fb) return;
+  fb.classList.add("show");
+  const idx = STAGES.indexOf(s);
+  const isLast = idx===STAGES.length-1;
+  $("fbNext").textContent = isLast ? "Du hast alle Stufen abgeschlossen! 🎉" : `Stufe ${idx+1}: ${STAGES[idx+1].title}`;
+  $("nextBtn").textContent = isLast ? "Zur Abschluss-Übersicht" : "Weiter →";
+  $("nextBtn").onclick = ()=>{
+    if(!isLast){ state.current=idx+1; save(); render(); window.scrollTo({top:0,behavior:"smooth"}); }
+    else { showDone(); }
+  };
+  renderStepper();
+}
+
+function showDone(){
+  const c=$("card");
+  c.innerHTML = `<div class="done-banner show">
+    <div class="big">🎓</div>
+    <h2 class="stitle">Herzlichen Glückwunsch${state.name?', '+state.name:''}!</h2>
+    <p>Du hast alle ${totalStages()} Stufen abgeschlossen und aus einem rohen Text eine vollständige wissenschaftliche Projektarbeit erstellt.</p>
+    <p><b>Diese Word-Kompetenzen beherrschst du jetzt:</b><br>
+    Formatvorlagen &middot; Überschriften &middot; Deckblatt &middot; automatisches Inhaltsverzeichnis &middot;
+    Kopf-/Fußzeilen &middot; Seitenzahlen &middot; Bilder &amp; Abbildungsverzeichnis &middot; Tabellen &middot;
+    Quellen &amp; Literaturverzeichnis &middot; Kommentare &middot; Änderungen nachverfolgen &middot; PDF-Export.</p>
+    <p>Vergiss nicht, deine fertige PDF abzugeben – und deine Chiffre unten zu sichern.</p>
+    <div class="actions" style="justify-content:center"><button class="btn ghost" id="backBtn">Zurück zur Übersicht</button></div>
+    </div>`;
+  $("backBtn").onclick=()=>{ state.current=totalStages(); render(); };
+}
+
+// ====================== CHIFFRE / DEEPLINK ======================
+function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2200); }
+function copy(text){ navigator.clipboard?.writeText(text).then(()=>toast("In die Zwischenablage kopiert ✓"),()=>{}); }
+
+$("genCode").onclick = ()=>{ const code=encode(); $("codeBox").value=code; copy(code); };
+$("genLink").onclick = ()=>{ const link=location.href.split(/[?#]/)[0]+"?code="+encodeURIComponent(encode()); $("codeBox").value=link; copy(link); };
+$("loadCode").onclick = ()=>{
+  const v=$("loadBox").value.trim(); if(!v){ toast("Bitte zuerst eine Chiffre einfügen."); return; }
+  let code=v; const m=v.match(/[?&]code=([^&]+)/); if(m) code=decodeURIComponent(m[1]);
+  const s=decode(code); if(!s){ toast("Diese Chiffre konnte nicht gelesen werden."); return; }
+  state=s; save(); $("nameInput").value=state.name||""; render(); toast("Fortschritt geladen ✓");
+};
+
+// ====================== NAME ======================
+$("nameInput").oninput = e=>{ state.name=e.target.value; save(); };
+
+// ====================== INIT ======================
+load();
+$("nameInput").value = state.name || "";
+$("ptotal").textContent = totalStages();
+render();
+</script>
+</body>
+</html>
